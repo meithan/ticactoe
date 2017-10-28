@@ -199,6 +199,8 @@ class MinimaxPlayer:
   def __init__(self, mark=None):
     self.name = "MinimaxPlayer"
     self.mark = mark
+    self.cache = {}
+    self.use_cache = True
 
   # Receives a GameState and returns the position to play
   def get_play(self, state):
@@ -212,7 +214,8 @@ class MinimaxPlayer:
     # Otherwise, do minimax search
     self.explored = 0
     best_play, best_score, best_count = self.minimax(self.mark, state, 0)
-    print("Explored plays:", self.explored)
+    print("Size of game cache:", len(self.cache))
+    print("Explored positions:", self.explored)
     if best_score == +1:
       expected_str = "WIN in %i plays" % (best_count)
     elif best_score == -1:
@@ -221,6 +224,22 @@ class MinimaxPlayer:
       expected_str = "TIE in %i plays" % (best_count)
     print("Expected result:", expected_str)
     return best_play
+
+  # Serializes a game state (including the player to move) so it can
+  # be hashed and cached
+  def serialize_state(self, playing, state):
+    if playing == self.mark:
+      serialized = "A"    # Agent
+    else:
+      serialized = "O"    # Opponent
+    for i in range(3):
+      for j in range(3):
+        if state.grid[i][j] is None:
+          s = "_"
+        else:
+          s = state.grid[i][j]
+        serialized += s
+    return serialized
 
   # Returns (score, action) where score is the optimal expected score
   # (a maximum for the agent, a minimum for its opponent) and the action
@@ -250,8 +269,14 @@ class MinimaxPlayer:
     for play in state.get_legal_plays():
       new_state = state.try_play_at(cur_player, play)
       next_player = "O" if cur_player == "X" else "X"
-      self.explored += 1
-      foo, score, count = self.minimax(next_player, new_state, counter+1)
+      serialized = self.serialize_state(next_player, new_state)
+      if serialized in self.cache:
+        foo, score, count = self.cache[serialized]
+      else:
+        self.explored += 1
+        foo, score, count = self.minimax(next_player, new_state, counter+1)
+        if self.use_cache:
+          self.cache[serialized] = (foo, score, count)
       play_scores.append((play, score, count))
 
     # Then return the action that maximizes or minimizes the score, depending
