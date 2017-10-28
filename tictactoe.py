@@ -1,19 +1,21 @@
 from copy import deepcopy
 import random
 
+# ==============================================================================
+
 # The game state
 class GameState:
 
   # Creates a new game
-  # The state ot the grid (a 3x3 ndarray) is an optional argument
-  # A 0 is an unplayed square, a 1 for Player 1, a 2 for Player 2.
+  # The state ot the grid (a "3x3" python list) is an optional argument
+  # Each "square" holds either "X", "O" or None
   def __init__(self, grid=None):
     if grid is None:
       self.grid = [[None,None,None],[None,None,None],[None,None,None]]
     else:
       self.grid = deepcopy(grid)
 
-  # Plays for player at pos
+  # Plays for player ("X" or "O") at pos (i,j)
   def play_at(self, player, pos):
     i,j = pos
     if self.grid[i][j] is not None:
@@ -105,8 +107,14 @@ class GameState:
       if i != 2:
         print("-----------")
 
-# =======================================
-# Players
+# ==============================================================================
+# PLAYERS
+
+# Any player class must have three things:
+# self.name: indicates the player's name
+# self.mark: stores the assigned playing mark
+# self.get_play(self, state): receives a gamestate and returns the move to play
+# Might use ABCs in the future
 
 # A player that plays at random
 class RandomPlayer():
@@ -194,6 +202,7 @@ class HumanPlayer():
     return (i,j)
 
 # A Minimax AI player
+# The game cache makes it much faster, but can be turned off
 class MinimaxPlayer:
 
   def __init__(self, mark=None):
@@ -298,9 +307,9 @@ class MinimaxPlayer:
 
     return random.choice(best)
 
-# =======================================
-# The actual game
+# ==============================================================================
 
+# The actual game
 class Game():
 
   # Initializes a new game
@@ -349,7 +358,7 @@ class Game():
     self.gamestate.show()
 
 
-# =======================================
+# ==============================================================================
 
 if __name__ == "__main__":
 
@@ -379,6 +388,12 @@ if __name__ == "__main__":
   # print("Is winning:", gs.is_winning())
   # print("Winner:", gs.get_winner())
 
+  # Available players
+  # RandomPlayer: plays at random
+  # OpportunistPlayer: plays winning move if it can, random otherwise
+  # BlockingPlayer: blocks opponent's winning move if it can, random otherwise
+  # MinimaxPlayer: a full Minimax agent. Plays almost perfectly.
+  # HumanPlayer: a human playing through the terminal
   playerX = HumanPlayer()
   playerO = MinimaxPlayer()
 
