@@ -12,8 +12,10 @@ class GameState:
   def __init__(self, grid=None):
     if grid is None:
       self.grid = [[None,None,None],[None,None,None],[None,None,None]]
+      self.plays = 0
     else:
       self.grid = deepcopy(grid)
+      self.plays = self.count_plays()
 
   # Plays for player ("X" or "O") at pos (i,j)
   def play_at(self, player, pos):
@@ -21,6 +23,7 @@ class GameState:
     if self.grid[i][j] is not None:
       raise RuntimeError("Illegal play!")
     self.grid[i][j] = player
+    self.plays += 1
 
   # Returns the gamestate that results from player playing at pos
   def try_play_at(self, player, pos):
@@ -40,21 +43,22 @@ class GameState:
           legal_plays.append((i,j))
     return legal_plays
 
-  # Returns whether the grid has no played squares
-  def is_empty(self):
+  # Counts the number of played squares
+  def count_plays(self):
+    count = 0
     for i in range(3):
       for j in range(3):
         if self.grid[i][j] is not None:
-          return False
-    return True
+          count += 1
+    return count
+
+  # Returns whether the grid has no played squares
+  def is_empty(self):
+    return self.plays == 0
 
   # Returns whether the grid has no unplayed squares left
   def is_full(self):
-    for i in range(3):
-      for j in range(3):
-        if self.grid[i][j] is None:
-          return False
-    return True
+    return self.plays == 9
 
   # Returns whether the game state is a winning position (three in line)
   def is_winning(self):
@@ -82,7 +86,10 @@ class GameState:
         if player not in winners:
           winners.append(player)
     if len(winners) == 0:
-      return None
+      if self.is_full():
+        return "tie"
+      else:
+        return None
     elif len(winners) == 1:
       return winners[0]
     else:
@@ -202,36 +209,57 @@ class HumanPlayer():
     return (i,j)
 
 # A Minimax AI player
-# The game cache makes it much faster, but can be turned off
+# Uses a game cache to greatly speed up score estimation
 class MinimaxPlayer:
 
   def __init__(self, mark=None):
     self.name = "MinimaxPlayer"
     self.mark = mark
     self.cache = {}
-    self.use_cache = True
 
   # Receives a GameState and returns the position to play
   def get_play(self, state):
+
     legal_plays = state.get_legal_plays()
     if len(legal_plays) == 0:
       raise RuntimeError("No legal plays possible!")
-    # Hackish: if board is empty, play in a corner
-    # Otherwise this requires exploring 549946 positions
-    if state.is_empty():
-      return random.choice([(0,0),(0,2),(2,0),(2,2)])
-    # Otherwise, do minimax search
+    self.opp_mark = "O" if self.mark == "X" else "X"
+
+    # Obtain expected scores for all plays
     self.explored = 0
-    best_play, best_score, best_count = self.minimax(self.mark, state, 0)
     print("Size of game cache:", len(self.cache))
+    play_scores = self.minimax(self.mark, state, 0)
     print("Explored positions:", self.explored)
-    if best_score == +1:
-      expected_str = "WIN in %i plays" % (best_count)
-    elif best_score == -1:
-      expected_str = "LOSS in %i plays" % (best_count)
-    elif best_score == 0:
-      expected_str = "TIE in %i plays" % (best_count)
+
+    # Rank plays by score and determine result and depth
+    play_scores.sort(key=lambda x: x[1], reverse=True)
+    print("Game analysis:")
+    for i in range(len(play_scores)):
+      play, score = play_scores[i]
+      if score > 0:
+        result = +1
+        depth = 10 - score
+      elif score == 0:
+        result = 0
+        depth = 9
+      else:
+        result = -1
+        depth = -score - 10
+      play_scores[i] = play_scores[i] + (result, depth)
+      print(play, score, depth)
+
+    # Select best play
+    best_play, best_score, best_result, best_depth = play_scores[0]
+    plays_togo = best_depth - state.plays
+    if best_result == +1:
+      expected_str = "WIN in %i plays" % (plays_togo)
+    elif best_result == -1:
+      expected_str = "LOSS in %i plays" % (plays_togo)
+    elif best_result == 0:
+      expected_str = "TIE in %i plays" % (plays_togo)
     print("Expected result:", expected_str)
+    print("Selected play:", best_play)
+
     return best_play
 
   # Serializes a game state (including the player to move) so it can
@@ -250,62 +278,61 @@ class MinimaxPlayer:
         serialized += s
     return serialized
 
-  # Returns (score, action) where score is the optimal expected score
-  # (a maximum for the agent, a minimum for its opponent) and the action
-  # that leads to that optimal score
-  def minimax(self, cur_player, state, counter):
-
-    #print(cur_player, counter)
-    #state.show()
+  # Returns (action, score, depth) where score is the optimal expected score
+  # (a maximum for the agent, a minimum for its opponent), the action
+  # that leads to that optimal score, and the depth of the best winning state
+  def minimax(self, cur_player, state, depth):
 
     # If the passed state is an end state, return the score
     # The score is compound: it includes whether the result is a win, loss
-    # or tie, but also how many plays are required to reach it
+    # or tie, but also the depth required to reach it
     # The idea is that a win is preferable sooner, while a loss or tie is
     # preferable later
     winner = state.get_winner()
     if winner is not None:
       if winner == self.mark:
-        return (None, +1, counter)
+        return +10 - depth
+      elif winner == "tie":
+        return 0
+      elif winner == self.opp_mark:
+        return -10 + depth
       else:
-        return (None, -1, counter)
-    elif winner is None and state.is_full():
-      return (None, 0, counter)
+        print(self.mark, self.opp_mark)
+        raise RuntimeError("Invalid winner:", winner)
 
     # If not, get list of actions, obtain the next game state for each
-    # and evaluate its score recursively
+    # play and evaluate its score recursively
     play_scores = []
     for play in state.get_legal_plays():
       new_state = state.try_play_at(cur_player, play)
       next_player = "O" if cur_player == "X" else "X"
       serialized = self.serialize_state(next_player, new_state)
       if serialized in self.cache:
-        foo, score, count = self.cache[serialized]
+        score = self.cache[serialized]
       else:
         self.explored += 1
-        foo, score, count = self.minimax(next_player, new_state, counter+1)
-        if self.use_cache:
-          self.cache[serialized] = (foo, score, count)
-      play_scores.append((play, score, count))
+        score = self.minimax(next_player, new_state, depth+1)
+        self.cache[serialized] = score
+      play_scores.append((play, score))
 
     # Then return the action that maximizes or minimizes the score, depending
     # on who's the current player
     best_score = None
-    for play, raw_score, count in play_scores:
-      if cur_player == self.mark:
-        # Maximizer
-        score = raw_score - counter
+    for play, score in play_scores:
+      if best_score is None:
+        best_score = score
       else:
-        # Minimizer
-        score = - raw_score + counter
-      if best_score is None or score > best_score:
-        best_score = score
-        best = [(play,raw_score,count)]
-      elif score == best_score:
-        best_score = score
-        best.append((play,raw_score,count))
+        if cur_player == self.mark:
+          is_better = score > best_score   # Maximizer
+        else:
+          is_better = score < best_score   # Minimizer
+        if is_better:
+          best_score = score
 
-    return random.choice(best)
+    if depth == 0:
+      return play_scores
+    else:
+      return best_score
 
 # ==============================================================================
 
@@ -344,9 +371,6 @@ class Game():
       self.to_play = "O" if self.to_play == "X" else "X"
       winner = self.gamestate.get_winner()
       if winner is not None:
-        break
-      elif self.gamestate.is_full() and winner is None:
-        winner = "tie"
         break
 
     self.ended = True
@@ -394,7 +418,7 @@ if __name__ == "__main__":
   # BlockingPlayer: blocks opponent's winning move if it can, random otherwise
   # MinimaxPlayer: a full Minimax agent. Plays almost perfectly.
   # HumanPlayer: a human playing through the terminal
-  playerX = HumanPlayer()
+  playerX = MinimaxPlayer()
   playerO = MinimaxPlayer()
 
   game = Game(playerX, playerO)
