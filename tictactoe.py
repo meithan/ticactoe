@@ -242,9 +242,9 @@ class MinimaxPlayer:
       elif score == 0:
         result = 0
         depth = 9
-      else:
+      elif score < 0:
         result = -1
-        depth = -score - 10
+        depth = 10 + score
       play_scores[i] = play_scores[i] + (result, depth)
       print(play, score, depth)
 
@@ -419,7 +419,7 @@ if __name__ == "__main__":
   # MinimaxPlayer: a full Minimax agent. Plays almost perfectly.
   # HumanPlayer: a human playing through the terminal
   playerX = MinimaxPlayer()
-  playerO = MinimaxPlayer()
+  playerO = HumanPlayer()
 
   game = Game(playerX, playerO)
   game.play()
