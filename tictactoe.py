@@ -212,9 +212,10 @@ class HumanPlayer():
 # Uses a game cache to greatly speed up score estimation
 class MinimaxPlayer:
 
-  def __init__(self, mark=None):
+  def __init__(self, mark=None, debug=False):
     self.name = "MinimaxPlayer"
     self.mark = mark
+    self.debug = debug
     self.cache = {}
 
   # Receives a GameState and returns the position to play
@@ -227,13 +228,13 @@ class MinimaxPlayer:
 
     # Obtain expected scores for all plays
     self.explored = 0
-    print("Size of game cache:", len(self.cache))
+    if self.debug: print("Size of game cache:", len(self.cache))
     play_scores = self.minimax(self.mark, state, 0)
-    print("Explored positions:", self.explored)
+    if self.debug: print("Explored positions:", self.explored)
 
     # Rank plays by score and determine result and depth
     play_scores.sort(key=lambda x: x[1], reverse=True)
-    print("Game analysis:")
+    if self.debug: print("Game analysis:")
     for i in range(len(play_scores)):
       play, score = play_scores[i]
       if score > 0:
@@ -246,19 +247,20 @@ class MinimaxPlayer:
         result = -1
         depth = 10 + score
       play_scores[i] = play_scores[i] + (result, depth)
-      print(play, score, depth)
+      if self.debug: print(play, score, depth)
 
     # Select best play
     best_play, best_score, best_result, best_depth = play_scores[0]
     plays_togo = best_depth - state.plays
-    if best_result == +1:
-      expected_str = "WIN in %i plays" % (plays_togo)
-    elif best_result == -1:
-      expected_str = "LOSS in %i plays" % (plays_togo)
-    elif best_result == 0:
-      expected_str = "TIE in %i plays" % (plays_togo)
-    print("Expected result:", expected_str)
-    print("Selected play:", best_play)
+    if self.debug:
+      if best_result == +1:
+        expected_str = "WIN in %i plays" % (plays_togo)
+      elif best_result == -1:
+        expected_str = "LOSS in %i plays" % (plays_togo)
+      elif best_result == 0:
+        expected_str = "TIE in %i plays" % (plays_togo)
+      print("Expected result:", expected_str)
+      print("Selected play:", best_play)
 
     return best_play
 
@@ -341,9 +343,10 @@ class Game():
 
   # Initializes a new game
   # playerX and playerO must be Player objects
-  def __init__(self, playerX, playerO):
+  def __init__(self, playerX, playerO, quiet=False):
     self.playerX = playerX
     self.playerO = playerO
+    self.quiet = quiet
     self.playerX.mark = "X"
     self.playerO.mark = "O"
     self.plays = 0
@@ -361,11 +364,13 @@ class Game():
         player = self.playerO
       else:
         raise RuntimeError("Invalid player: %s" % str(self.to_play))
-      print()
-      print("\n== Player %s's turn (%s) ==" % (player.mark, player.name))
-      self.gamestate.show()
+      if not self.quiet:
+        print()
+        print("\n== Player %s's turn (%s) ==" % (player.mark, player.name))
+        self.gamestate.show()
       play = player.get_play(self.gamestate)
-      print("\nPlayer %s plays at %s" % (player.mark, play))
+      if not self.quiet:
+        print("\nPlayer %s plays at %s" % (player.mark, play))
       self.gamestate.play_at(player.mark, play)
       self.plays += 1
       self.to_play = "O" if self.to_play == "X" else "X"
@@ -374,12 +379,15 @@ class Game():
         break
 
     self.ended = True
-    if winner == "tie":
-      print("\nGAME TIED!")
-    else:
-      winner = playerX if winner == "X" else playerO
-      print("\nPLAYER %s WINS! Congrats, %s!" % (winner.mark, winner.name))
-    self.gamestate.show()
+    if not self.quiet:
+      if winner == "tie":
+        print("\nGAME TIED!")
+      else:
+        winner = playerX if winner == "X" else playerO
+        print("\nPLAYER %s WINS! Congrats, %s!" % (winner.mark, winner.name))
+      self.gamestate.show()
+
+    return winner
 
 
 # ==============================================================================
@@ -418,8 +426,8 @@ if __name__ == "__main__":
   # BlockingPlayer: blocks opponent's winning move if it can, random otherwise
   # MinimaxPlayer: a full Minimax agent. Plays almost perfectly.
   # HumanPlayer: a human playing through the terminal
-  playerX = MinimaxPlayer()
+  playerX = MinimaxPlayer(debug=True)
   playerO = HumanPlayer()
 
-  game = Game(playerX, playerO)
-  game.play()
+  game = Game(playerX, playerO, quiet=False)
+  winner = game.play()
