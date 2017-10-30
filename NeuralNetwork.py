@@ -83,7 +83,6 @@ class NeuralNetwork:
     invals = input_values[:]
     for l in range(self.L-1):
       tmp = np.dot(self.weights[l], invals) + self.biases[l]
-      print(l, tmp)
       outvals = self.activation(tmp)
       invals = outvals[:]
     return outvals
@@ -94,7 +93,7 @@ if __name__ == "__main__":
 
   NN = NeuralNetwork(L=3, Ns=[9,9,9])
   NN.randomize()
-  NN.save("test.nn")
+  NN.save("random.nn")
 
   invals = np.array([random.choice([-1,0,1]) for i in range(9)])
   print(invals)
