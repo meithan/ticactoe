@@ -383,7 +383,7 @@ class Game():
       if winner == "tie":
         print("\nGAME TIED!")
       else:
-        winner = playerX if winner == "X" else playerO
+        winner = self.playerX if winner == "X" else self.playerO
         print("\nPLAYER %s WINS! Congrats, %s!" % (winner.mark, winner.name))
       self.gamestate.show()
 
