@@ -339,7 +339,7 @@ class MinimaxPlayer:
 # ==============================================================================
 
 # The actual game
-class Game():
+class TicTacToe():
 
   # Initializes a new game
   # playerX and playerO must be Player objects
@@ -429,5 +429,5 @@ if __name__ == "__main__":
   playerX = MinimaxPlayer(debug=True)
   playerO = HumanPlayer()
 
-  game = Game(playerX, playerO, quiet=False)
+  game = TicTacToe(playerX, playerO, quiet=False)
   winner = game.play()
