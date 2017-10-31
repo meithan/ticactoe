@@ -1,0 +1,11 @@
+MinimaxPlayer vs RandomPlayer
+
+Wins: 900656
+Ties: 99344
+Losses: 0
+Strength: 0.950328
+
+real	8m18.635s
+user	8m18.564s
+sys	0m0.017s
+
