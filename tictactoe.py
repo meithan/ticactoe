@@ -148,7 +148,7 @@ class OpportunistPlayer():
   def __init__(self, mark=None, quiet=False):
     self.name = "OpportunistPlayer"
     self.mark = mark
-    self.quiet = qiet
+    self.quiet = quiet
 
   # Receives a GameState and returns the position to play
   def get_play(self, state):
