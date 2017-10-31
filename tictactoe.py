@@ -126,26 +126,29 @@ class GameState:
 # A player that plays at random
 class RandomPlayer():
 
-  def __init__(self, mark=None):
+  def __init__(self, mark=None, quiet=False):
     self.name = "RandomPlayer"
     self.mark = mark
+    self.quiet = quiet
 
   # Receives a GameState and returns the position to play
   def get_play(self, state):
     legal_plays = state.get_legal_plays()
     if len(legal_plays) == 0:
       raise RuntimeError("No legal plays possible!")
-    if random.random() <= 0.3:
-      print("RandomPlayers says: I have no idea what I'm doing.")
+    if not self.quiet:
+      if random.random() <= 0.3:
+        print("RandomPlayers says: I have no idea what I'm doing.")
     return random.choice(legal_plays)
 
 # Plays a winning move if it can, randomly otherwise
 # Will win if you let it!
 class OpportunistPlayer():
 
-  def __init__(self, mark=None):
+  def __init__(self, mark=None, quiet=False):
     self.name = "OpportunistPlayer"
     self.mark = mark
+    self.quiet = qiet
 
   # Receives a GameState and returns the position to play
   def get_play(self, state):
@@ -155,7 +158,8 @@ class OpportunistPlayer():
     for play in legal_plays:
       newstate = state.try_play_at(self.mark, play)
       if newstate.get_winner() == self.mark:
-        print("OpportunistPlayer says: Hah, you're toast!")
+        if not self.quiet:
+          print("OpportunistPlayer says: Hah, you're toast!")
         return play
     return random.choice(legal_plays)
 
@@ -163,9 +167,10 @@ class OpportunistPlayer():
 # randomly otherwise
 class BlockingPlayer():
 
-  def __init__(self, mark=None):
+  def __init__(self, mark=None, quiet=False):
     self.name = "BlockingPlayer"
     self.mark = mark
+    self.quiet = quiet
 
   # Receives a GameState and returns the position to play
   def get_play(self, state):
@@ -176,7 +181,8 @@ class BlockingPlayer():
       opponent = "O" if self.mark == "X" else "X"
       newstate = state.try_play_at(opponent, pos)
       if newstate.get_winner() == opponent:
-        print("BlockingPlayer says: You thought I wouldn't see that, didn't you.")
+        if not self.quiet:
+          print("BlockingPlayer says: You thought I wouldn't see that, didn't you.")
         return pos
     return random.choice(legal_plays)
 
