@@ -4,12 +4,13 @@ import numpy as np
 # A Neural Network tictacoe player
 class NNPlayer:
 
-  def __init__(self, mark=None, fname=None):
+  def __init__(self, mark=None, fname=None, debug=False):
     self.name = "NeuralNetwork"
     self.mark = mark
     self.NN = None
     if fname is not None:
       self.load_NN(fname)
+    self.debug = debug
 
   # Loads a NN definition from file
   def load_NN(self, fname):
@@ -19,8 +20,6 @@ class NNPlayer:
   # Receives a GameState and returns the position to play
   # Human must enter comma-separated row and column. (0,0) is upper left.
   def get_play(self, state):
-
-    debug = True
 
     invalues = np.zeros(9)
     for i in range(3):
@@ -44,7 +43,7 @@ class NNPlayer:
         play_scores.append((pos, outvalues[i]))
     play_scores.sort(key=lambda x: x[1], reverse=True)
 
-    if debug:
+    if self.debug:
       print("Play scores")
       for play, score in play_scores:
         print(play, "%.5f" % score)
