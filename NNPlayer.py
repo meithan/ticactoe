@@ -4,18 +4,21 @@ import numpy as np
 # A Neural Network tictacoe player
 class NNPlayer:
 
-  def __init__(self, mark=None, fname=None, debug=False):
+  def __init__(self, mark=None, NN=None, fname=None, debug=False):
     self.name = "NeuralNetwork"
     self.mark = mark
-    self.NN = None
-    if fname is not None:
-      self.load_NN(fname)
+    if NN is not None:
+      self.NN = NN
+    else:
+      self.NN = None
+      if fname is not None:
+        self.load_NN_from_file(fname)
     self.debug = debug
 
   # Loads a NN definition from file
-  def load_NN(self, fname):
+  def load_NN_from_file(self, fname):
     self.NN = NeuralNetwork()
-    self.NN.load(fname)
+    self.NN.load_from_file(fname)
 
   # Receives a GameState and returns the position to play
   # Human must enter comma-separated row and column. (0,0) is upper left.
