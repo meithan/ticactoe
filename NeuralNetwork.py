@@ -28,7 +28,8 @@ class NeuralNetwork:
     self.biases = []
     for l in range(1, self.L):
       self.weights.append(np.zeros((self.Ns[l], self.Ns[l-1])))
-      self.biases.append(np.ones(self.Ns[l]))
+      self.biases.append(np.zeros(self.Ns[l]))
+    self.wshape = self.weights[0].shape
 
   # Randomizes all weights
   def randomize(self):
@@ -36,12 +37,32 @@ class NeuralNetwork:
       M, N = self.weights[l].shape
       self.weights[l] = np.random.rand(M, N)
 
+  # Returns a "serialized" version of all weights and biases so that they
+  # can be more easily fed to optimizations algorithms
+  def serialize(self):
+    serial = np.array([], dtype=self.weights[0].dtype)
+    for l in range(self.L-1):
+      M, N = self.weights[l].shape
+      serial = np.concatenate([serial, self.weights[l].reshape(M*N)])
+      serial = np.concatenate([serial, self.biases[l]])
+    return serial
+
+  # Unpacks and loads the serialized weights and biases
+  def load_serialized(self, serial):
+    i0 = 0
+    for l in range(self.L-1):
+      M, N = self.weights[l].shape
+      K = len(self.biases[l])
+      self.weights[l] = serial[i0:i0+M*N].reshape(M,N)
+      self.biases[l] = serial[i0+M*N:i0+M*N+K]
+      i0 = M*N + K
+
   # Saves the definition of the neural network to a file
   # Excluding comments:
   # The first line is L,
   # The second line is the the list Ns,
   # Then the L-1 weight matrices follow, one at a time, each preceeded by its shape
-  def save(self, fname):
+  def save_to_file(self, fname):
     f = open(fname, "w")
     f.write("# L\n")
     f.write("%i\n" % self.L)
@@ -56,7 +77,7 @@ class NeuralNetwork:
     f.close()
 
   # Loads a NN definition from file
-  def load(self, fname):
+  def load_from_file(self, fname):
     f = open(fname)
     f.readline()
     self.L = int(f.readline().strip())
@@ -93,9 +114,13 @@ if __name__ == "__main__":
 
   NN = NeuralNetwork(L=3, Ns=[9,9,9])
   NN.randomize()
-  NN.save("random.nn")
+  NN.save_to_file("random.nn")
 
-  invals = np.array([random.choice([-1,0,1]) for i in range(9)])
-  print(invals)
-  outvals = NN.evaluate(invals)
-  print(outvals)
+  print(NN.weights[0], NN.weights[1], NN.biases)
+
+  serial = NN.serialize()
+  #print(serial, serial.size)
+
+  NN.load_serialized(serial)
+  print("\n\n")
+  print(NN.weights[0], NN.weights[1], NN.biases)
